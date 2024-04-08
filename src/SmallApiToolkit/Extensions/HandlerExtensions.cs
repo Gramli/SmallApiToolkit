@@ -4,7 +4,7 @@ using SmallApiToolkit.RequestHandlers;
 
 namespace SmallApiToolkit.Extensions
 {
-    public static class HandlerExtension
+    public static class HandlerExtensions
     {
         public static async Task<IResult> SendAsync<TResponse, TRequest>(this IRequestHandler<TResponse, TRequest> requestHandler, TRequest request, CancellationToken cancellationToken)
         {

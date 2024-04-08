@@ -6,11 +6,10 @@ using System.Text.Json;
 
 namespace SmallApiToolkit.Middleware
 {
-    //TODO ALLOW TO INHERITE AND SPECIFY CUSTOM METHODS
-    public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+    public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
     {
         private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
-        private readonly ILogger<ExceptionMiddleware> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        protected readonly ILogger<ExceptionMiddleware> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         public async Task InvokeAsync(HttpContext context)
         {
@@ -25,7 +24,10 @@ namespace SmallApiToolkit.Middleware
             }
         }
 
-        private async Task WriteResponseAsync(Exception generalEx, HttpContext context)
+        /// <summary>
+        /// Write data to context response
+        /// </summary>
+        protected virtual async Task WriteResponseAsync(Exception generalEx, HttpContext context)
         {
             var (responseCode, responseMessage) = ExtractFromException(generalEx);
             context.Response.ContentType = "application/json";
@@ -34,16 +36,19 @@ namespace SmallApiToolkit.Middleware
             await context.Response.WriteAsync(jsonResult);
         }
 
-        private string CreateResponseJson(string errorMessage)
+        /// <summary>
+        /// Create response object and serialize it to JSON
+        /// </summary>
+        protected virtual string CreateResponseJson(string errorMessage)
         {
             var response = new DataResponse<object>()
             {
-                Errors = new List<string>() { errorMessage }
+                Errors = [errorMessage]
             };
             return JsonSerializer.Serialize(response);
         }
 
-        private (HttpStatusCode responseCode, string responseMessage) ExtractFromException(Exception generalEx)
+        protected virtual (HttpStatusCode responseCode, string responseMessage) ExtractFromException(Exception generalEx)
             => generalEx switch
             {
                 TaskCanceledException taskCanceledException => (HttpStatusCode.NoContent, taskCanceledException.Message),
