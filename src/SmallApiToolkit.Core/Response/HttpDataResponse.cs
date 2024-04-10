@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace SmallApiToolkit.Response
+namespace SmallApiToolkit.Core.Response
 {
     public class HttpDataResponse<T> : DataResponse<T>
     {

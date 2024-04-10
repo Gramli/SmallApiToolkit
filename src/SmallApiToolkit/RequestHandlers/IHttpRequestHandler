@@ -1,5 +1,0 @@
-
-//TODO
-public interface IHttpRequestHandler<TResponse, in TRequest> : IRequestHandler<HttpDataResponse<TResponse>, TRequest>
-    {
-    }

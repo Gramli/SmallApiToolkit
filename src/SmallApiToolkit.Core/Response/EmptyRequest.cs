@@ -1,4 +1,4 @@
-﻿namespace SmallApiToolkit.Response
+﻿namespace SmallApiToolkit.Core.Response
 {
     public class EmptyRequest
     {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using SmallApiToolkit.Response;
+using SmallApiToolkit.Core.Response;
 using System.Net;
 using System.Text.Json;
 

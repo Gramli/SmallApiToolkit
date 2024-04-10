@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using SmallApiToolkit.Response;
+using SmallApiToolkit.Core.Response;
 
 namespace SmallApiToolkit.Extensions
 {
