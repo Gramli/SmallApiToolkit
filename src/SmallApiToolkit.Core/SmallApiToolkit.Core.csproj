@@ -4,6 +4,24 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Title>SmallApiToolkit.Core</Title>
+    <Description>SmallApiToolkit.Core is the core package containing essential objects and functionality for the SmallApiToolkit library. It provides fundamental building blocks, such as data models and utilities.</Description>
+    <PackageProjectUrl>https://github.com/Gramli/SmallApiToolkit</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Gramli/SmallApiToolkit</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
