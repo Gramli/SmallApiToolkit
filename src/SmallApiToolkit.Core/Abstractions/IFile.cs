@@ -1,4 +1,4 @@
-﻿namespace SmallApiToolkit.File
+﻿namespace SmallApiToolkit.Core.Abstractions
 {
     public interface IFile
     {
