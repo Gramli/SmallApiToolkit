@@ -18,6 +18,8 @@ namespace SmallApiToolkit.Middleware
 
         protected virtual async Task LogRequest(HttpRequest request)
         {
+            request.EnableBuffering();
+
             var requestLog = new StringBuilder();
             requestLog.AppendLine("REQUEST:");
             requestLog.AppendLine($"Method: {request.Method} {request.Path}");
@@ -33,6 +35,7 @@ namespace SmallApiToolkit.Middleware
             }
 
             _logger.LogInformation(requestLog.ToString());
+            request.Body.Position = 0;
         }
 
         protected virtual async Task LogResponse(HttpResponse response) 
@@ -66,7 +69,9 @@ namespace SmallApiToolkit.Middleware
 
         private async static Task<string> ReadBodyAsync(Stream stream)
         {
-            using var reader = new StreamReader(stream);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            using var reader = new StreamReader(memory);
             return await reader.ReadToEndAsync();
         }
     }
