@@ -1,4 +1,3 @@
-# In progress
 # SmallApiToolkit
 SmallApiToolkit offers a range of features, including **ExceptionMiddleware**, which handles unexpected errors gracefully, **LoggingMiddleware** for comprehensive request and response logging, the **MapVersionGroup** extension method to streamline API versioning, and the **IHttpRequestHandler** interface, which simplifies the creation of consistent JSON responses.
 
@@ -109,3 +108,4 @@ This creates the endpoint route: **someGroup/v1/myGet**
 If you need more complex versioning, use: [https://github.com/dotnet/aspnet-api-versioning](https://github.com/dotnet/aspnet-api-versioning)
 
 ## Used in Examples
+[WeatherApi-VSA](https://github.com/Gramli/WeatherApi-VSA)
