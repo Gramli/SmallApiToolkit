@@ -86,7 +86,7 @@ app.UseMiddleware<ExceptionMiddleware>(); // register middleware
 ...
 app.Run();
 ```
-When you register **ExceptionMiddleware**, all exceptions will be caught (unless they are handled lower in the code). If you need to change the response sent to the client after an exception is caught, you can override the **WriteResponseAsync** or **CreateResponseJson** methods.
+When you register the **ExceptionMiddleware**, all exceptions will be caught (unless they are handled lower in the code). If you need to change the response sent to the client after an exception is caught, you can override the **ExtractFromException** method, which creates the response status and message. Additionally, if you need to define a custom JSON object that is sent to the client, you can override the **CreateResponseJson** method. Both methods are called from the **WriteResponseAsync** method, which you can also override. The **WriteResponseAsync** method takes the parameters of Exception and HttpContext.
 
 ## Versioning
 **SmallApiToolkit** has a **MapVersionGroup** extension method that adds a version to an endpoint route. You can use **MapVersionGroup** like this:
