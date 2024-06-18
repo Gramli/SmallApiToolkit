@@ -71,7 +71,28 @@ app.UseMiddleware<LoggingMiddleware>(); // register middleware
 ...
 app.Run();
 ```
-When you register **LoggingMiddleware**, all requests and responses will be logged. By default, requests and responses are logged using the Information log level. If you need to change the log structure or level, you can inherit from **LoggingMiddleware** and override the **LogRequest** and **LogResponse** methods.
+When you register **LoggingMiddleware**, all non-empty requests and responses will be logged. Additionally, the response Body property must have CanRead set to true. By default, requests and responses are logged using the Information log level. If you need to change the log structure or level, you can inherit from LoggingMiddleware and override the **LogRequest** and **LogResponse** methods.
+
+If you don't need the ability to edit your request and response logs, you can use the **built-in Microsoft middleware**:
+
+```
+var builder = WebApplication.CreateBuilder(args);
+//...
+builder.Services.AddHttpLogging(options => 
+{
+    options.LoggingFields = HttpLoggingFields.RequestHeaders |
+                            HttpLoggingFields.RequestBody |
+                            HttpLoggingFields.ResponseHeaders |
+                            HttpLoggingFields.ResponseBody;
+});
+...
+var app = builder.Build();
+...
+app.UseHttpLogging();
+...
+app.Run();
+```
+For more information, see [HTTP logging in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/http-logging/?view=aspnetcore-8.0)
 
 ### Exception Middleware
 To catch unexpected errors, we often use exception middleware. **SmallApiToolkit** allows you to register the **ExceptionMiddleware** class, which catches exceptions on every request. You can register it like this:
