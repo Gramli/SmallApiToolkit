@@ -2,6 +2,6 @@
 {
     public interface IRequestValidator<TRequest>
     {
-        bool IsValid(TRequest request);
+        RequestValidationResult Validate(TRequest request);
     }
 }

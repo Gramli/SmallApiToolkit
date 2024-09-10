@@ -1,10 +1,8 @@
 # SmallApiToolkit
-SmallApiToolkit offers a range of features, including **ExceptionMiddleware**, which handles unexpected errors gracefully, **LoggingMiddleware** for comprehensive request and response logging, the **MapVersionGroup** extension method to streamline API versioning, and the **IHttpRequestHandler** interface, which simplifies the creation of consistent JSON responses.
-
-SmallApiToolkit is designed to help developers build small APIs faster and more efficiently.
+**SmallApiToolkit** is a powerful and efficient tool designed to help developers build small APIs more quickly and with greater ease. It provides a range of features that streamline the creation of clean, maintainable, and well-structured API endpoints.
 
 ## RequestHandler
-To ensure Minimal API endpoints are clear and readable, **SmallApiToolkit** provides the IHttpRequestHandler interface. If your handler implements the **IHttpRequestHandler** interface, you can simply call the **SendAsync** extension method in the Minimal API endpoint with the request and CancellationToken as parameters. The **SendAsync** extension method automatically creates a JSON response based on the implementation of **IHttpRequestHandler**. Additionally, every response is wrapped in a DataResponse, which unifies all responses into the same structure, containing **Data** and **Errors**.
+To ensure Minimal API endpoints are clear and readable, **SmallApiToolkit** offers the **IHttpRequestHandler** interface. By implementing this interface in your handler, you can utilize the **SendAsync** extension method directly within the Minimal API endpoint. This method simplifies the process by automatically generating a JSON response based on the **IHttpRequestHandler** implementation. Additionally, every response is wrapped in a **DataResponse**, ensuring a consistent structure containing **Data** and **Errors**.
 
 ```
 public class DataResponse<T>
@@ -16,10 +14,10 @@ public class DataResponse<T>
 }
 ```
 
-Example IHttpRequestHandler usage:
-* First implement IHttpRequestHandler interface
+Example **IHttpRequestHandler** usage:
+1. Implement the IHttpRequestHandler interface
 
-```
+```csharp
     internal sealed class AddFavoriteHandler : IHttpRequestHandler<int, AddFavoriteCommand>
     {
         private readonly IValidator<AddFavoriteCommand> _addFavoriteCommandValidator;
@@ -40,14 +38,14 @@ Example IHttpRequestHandler usage:
         }
 ```
 
-* Register Handler in DI container:
+2. Register Handler in DI container:
 
-```
+```csharp
 serviceCollection.AddScoped<IHttpRequestHandler<int, AddFavoriteCommand>, AddFavoriteHandler>()
 ```
-* Register Minimal Api endpoint:
+3. Register Minimal Api endpoint:
 
-```
+```csharp
 MapPost("favorite", async ([FromBody] AddFavoriteCommand addFavoriteCommand, [FromServices] IHttpRequestHandler<int, AddFavoriteCommand> handler, CancellationToken cancellationToken) =>
                     await handler.SendAsync(addFavoriteCommand, cancellationToken))
                         .ProducesDataResponse<int>()
@@ -55,12 +53,15 @@ MapPost("favorite", async ([FromBody] AddFavoriteCommand addFavoriteCommand, [Fr
                         .WithTags("Setters");
 ```
 
+### ValidationHttpRequestHandler
+
+To ensure that every client-side request is validated, the **ValidationHttpRequestHandler<TResponse, TRequest>** class is provided. This class eliminates the need to duplicate validation logic across handlers by leveraging the **IRequestValidator<TRequest>** interface.
 
 ## Midlewares
-Middlewares in web APIs are essential for handling cross-cutting concerns such as authentication, logging, and error handling by processing requests and responses in a modular and reusable way. 
+Middlewares are essential for handling cross-cutting concerns such as authentication, logging, and error handling. **SmallApiToolkit** provides built-in middlewares for logging and exception handling, simplifying their integration into your API.
 
 ### Logging Middleware
-To log requests and responses, you can use **LoggingMiddleware**. To use it, you need to register logging, which means adding a logging provider and then registering the middleware. **SmallApiToolkit** allows you to register simple console logging using the **AddLogging** extension method. You can find more information about logging in the [Microsoft documentation](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-8.0)
+To log requests and responses, use the LoggingMiddleware. Register it as follows: 
 ```
 var builder = WebApplication.CreateBuilder(args);
 builder.AddLogging(LogLevel.Debug); // register console logging
@@ -71,7 +72,9 @@ app.UseMiddleware<LoggingMiddleware>(); // register middleware
 ...
 app.Run();
 ```
-When you register **LoggingMiddleware**, all non-empty requests and responses will be logged. Additionally, the response Body property must have CanRead set to true. By default, requests and responses are logged using the Information log level. If you need to change the log structure or level, you can inherit from LoggingMiddleware and override the **LogRequest** and **LogResponse** methods.
+By default, requests and responses are logged at the Information log level. For more control over logging, you can inherit from **LoggingMiddleware** and override its methods.
+
+You can find more information about logging in the [Microsoft documentation](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-8.0)
 
 If you don't need the ability to edit your request and response logs, you can use the **built-in Microsoft middleware**:
 
@@ -95,7 +98,7 @@ app.Run();
 For more information, see [HTTP logging in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/http-logging/?view=aspnetcore-8.0)
 
 ### Exception Middleware
-To catch unexpected errors, we often use exception middleware. **SmallApiToolkit** allows you to register the **ExceptionMiddleware** class, which catches exceptions on every request. You can register it like this:
+To catch and handle unexpected errors, use the **ExceptionMiddleware**. Register it like this:
 
 ```
 var builder = WebApplication.CreateBuilder(args);
@@ -106,10 +109,10 @@ app.UseMiddleware<ExceptionMiddleware>(); // register middleware
 ...
 app.Run();
 ```
-When you register the **ExceptionMiddleware**, all exceptions will be caught (unless they are handled lower in the code). If you need to change the response sent to the client after an exception is caught, you can override the **ExtractFromException** method, which creates the response status and message. Additionally, if you need to define a custom JSON object that is sent to the client, you can override the **CreateResponseJson** method. Both methods are called from the **WriteResponseAsync** method, which you can also override. The **WriteResponseAsync** method takes the parameters of Exception and HttpContext.
+Override the **ExtractFromException** and **CreateResponseJson** methods to customize the error response sent to clients.
 
 ## Versioning
-**SmallApiToolkit** has a **MapVersionGroup** extension method that adds a version to an endpoint route. You can use **MapVersionGroup** like this:
+**SmallApiToolkit** includes a **MapVersionGroup** extension method for versioning endpoint routes, ensuring your API can evolve without breaking existing clients.
 
 ```
 ...
@@ -124,9 +127,7 @@ app.MapGroup("someGroup")
 app.Run();
 ```
 
-This creates the endpoint route: **someGroup/v1/myGet**
-
-If you need more complex versioning, use: [https://github.com/dotnet/aspnet-api-versioning](https://github.com/dotnet/aspnet-api-versioning)
+This creates the endpoint route: **someGroup/v1/myGet**. For more complex versioning needs, consider using: [https://github.com/dotnet/aspnet-api-versioning](https://github.com/dotnet/aspnet-api-versioning)
 
 ## Used in Examples
-[WeatherApi-VSA](https://github.com/Gramli/WeatherApi-VSA)
+For a practical example of SmallApiToolkit in action, check out the [WeatherApi-VSA](https://github.com/Gramli/WeatherApi-VSA)repository.

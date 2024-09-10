@@ -16,14 +16,19 @@ namespace SmallApiToolkit.Core.RequestHandlers
         }
         public async Task<HttpDataResponse<TResponse>> HandleAsync(TRequest request, CancellationToken cancellationToken)
         {
-            if(!_validator.IsValid(request))
+
+            var validationResult = _validator.Validate(request);
+            if (!validationResult.IsValid)
             {
-                return HttpDataResponses.AsBadRequest<TResponse>(BadRequestMessage);
+                return CreateInvalidResponse(request, validationResult);
             }
 
             return await HandleValidRequestAsync(request, cancellationToken);
         }
 
         protected abstract Task<HttpDataResponse<TResponse>> HandleValidRequestAsync(TRequest request, CancellationToken cancellationToken);
+
+        protected virtual HttpDataResponse<TResponse> CreateInvalidResponse(TRequest request, RequestValidationResult validationResult)
+            => HttpDataResponses.AsBadRequest<TResponse>(BadRequestMessage);
     }
 }
