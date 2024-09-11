@@ -48,7 +48,7 @@ namespace SmallApiToolkit.Middleware
 
             TryAppendHeaders(responseLog, response.Headers);
 
-            if (response.ContentLength.HasValue && response.ContentLength > 0)
+            if (response.ContentLength.HasValue && response.ContentLength > 0 && response.Body.CanRead)
             {
                 await AppendBody(responseLog, response.Body);
             }
