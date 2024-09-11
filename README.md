@@ -57,6 +57,67 @@ MapPost("favorite", async ([FromBody] AddFavoriteCommand addFavoriteCommand, [Fr
 
 To ensure that every client-side request is validated, the **ValidationHttpRequestHandler<TResponse, TRequest>** class is provided. This class eliminates the need to duplicate validation logic across handlers by leveraging the **IRequestValidator<TRequest>** interface.
 
+1. Inherit from ValidationHttpRequestHandler, pass IRequestValidator to the base constructor, and then override the HandleValidRequestAsync method. If you need to create a custom invalid response message, you can also override the CreateInvalidResponse method.
+
+```csharp
+    internal sealed class GetCurrentWeatherHandler : ValidationHttpRequestHandler<CurrentWeatherDto, GetCurrentWeatherQuery>
+    {
+        private readonly IRequestValidator<CurrentWeatherDto> _currentWeatherValidator;
+        private readonly IWeatherService _weatherService;
+        private readonly ILogger<GetCurrentWeatherHandler> _logger;
+        public GetCurrentWeatherHandler(IRequestValidator<GetCurrentWeatherQuery> getCurrentWeatherQueryValidator,
+            IRequestValidator<CurrentWeatherDto> currentWeatherValidator,
+            IWeatherService weatherService,
+            ILogger<GetCurrentWeatherHandler> logger)
+            : base(getCurrentWeatherQueryValidator)
+        {
+            _weatherService = Guard.Against.Null(weatherService);
+            _currentWeatherValidator = Guard.Against.Null(currentWeatherValidator);
+            _logger = Guard.Against.Null(logger);
+        }
+
+        protected override HttpDataResponse<CurrentWeatherDto> CreateInvalidResponse(GetCurrentWeatherQuery request, RequestValidationResult validationResult)
+        {
+            _logger.LogError(LogEvents.CurrentWeathersValidation, validationResult.ToString());
+            return HttpDataResponses.AsBadRequest<CurrentWeatherDto>(string.Format(ErrorMessages.RequestValidationError, request));
+        }
+
+        protected override async Task<HttpDataResponse<CurrentWeatherDto>> HandleValidRequestAsync(GetCurrentWeatherQuery request, CancellationToken cancellationToken)
+        {
+            var getCurrentWeatherResult = await _weatherService.GetCurrentWeather(request.Location, cancellationToken);
+            if (getCurrentWeatherResult.IsFailed)
+            {
+                _logger.LogError(LogEvents.CurrentWeathersGet, getCurrentWeatherResult.Errors.JoinToMessage());
+                return HttpDataResponses.AsInternalServerError<CurrentWeatherDto>(ErrorMessages.ExternalApiError);
+            }
+
+            var validationResult = _currentWeatherValidator.Validate(getCurrentWeatherResult.Value);
+            if (!validationResult.IsValid)
+            {
+                _logger.LogError(LogEvents.CurrentWeathersValidation, ErrorLogMessages.ValidationErrorLog, validationResult.ToString());
+                return HttpDataResponses.AsInternalServerError<CurrentWeatherDto>(ErrorMessages.ExternalApiError);
+            }
+
+            return HttpDataResponses.AsOK(getCurrentWeatherResult.Value);
+        }
+    }
+```
+
+2. Register Handler in DI container:
+
+```csharp
+serviceCollection.AddScoped<IHttpRequestHandler<CurrentWeatherDto, GetCurrentWeatherQuery>, GetCurrentWeatherHandler>()
+```
+3. Register Minimal Api endpoint:
+
+```csharp
+MapGet("current", async (double latitude, double longitude, [FromServices] IHttpRequestHandler<CurrentWeatherDto, GetCurrentWeatherQuery> handler, CancellationToken cancellationToken) =>
+                    await handler.SendAsync(new GetCurrentWeatherQuery(latitude, longitude), cancellationToken))
+                        .ProducesDataResponse<CurrentWeatherDto>()
+                        .WithName("GetCurrentWeather")
+                        .WithTags("Getters");
+```
+
 ## Midlewares
 Middlewares are essential for handling cross-cutting concerns such as authentication, logging, and error handling. **SmallApiToolkit** provides built-in middlewares for logging and exception handling, simplifying their integration into your API.
 
