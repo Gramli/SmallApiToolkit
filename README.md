@@ -190,5 +190,9 @@ app.Run();
 
 This creates the endpoint route: **someGroup/v1/myGet**. For more complex versioning needs, consider using: [https://github.com/dotnet/aspnet-api-versioning](https://github.com/dotnet/aspnet-api-versioning)
 
+## Cors
+
+
+
 ## Used in Examples
 For a practical example of SmallApiToolkit in action, check out the [WeatherApi-VSA](https://github.com/Gramli/WeatherApi-VSA)repository.
