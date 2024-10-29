@@ -1,4 +1,4 @@
-﻿using SmallApiToolkit.Core.Extensions;
+using SmallApiToolkit.Core.Extensions;
 using SmallApiToolkit.Core.Response;
 using SmallApiToolkit.Core.Validation;
 

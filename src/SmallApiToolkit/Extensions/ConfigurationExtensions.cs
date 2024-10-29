@@ -5,12 +5,11 @@ namespace SmallApiToolkit.Extensions
 {
     public static class ConfigurationExtensions
     {
-        public static WebApplicationBuilder AddLogging(this WebApplicationBuilder builder, LogLevel minimumLevel = LogLevel.Information)
+        public static WebApplicationBuilder AddLogging(this WebApplicationBuilder builder)
         {
             builder.Logging
                 .ClearProviders()
-                .AddConsole()
-                .SetMinimumLevel(minimumLevel);
+                .AddConsole();
 
             return builder;
         }
