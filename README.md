@@ -1,5 +1,5 @@
 # SmallApiToolkit
-**SmallApiToolkit** is a powerful and efficient tool designed to help developers build small APIs more quickly and with greater ease. It provides a range of features that streamline the creation of clean, maintainable, and well-structured API endpoints.
+**SmallApiToolkit** is a tool designed to help developers build small APIs more quickly and with greater ease. It provides a range of features that streamline the creation of clean, maintainable, and well-structured API endpoints.
 
 ## RequestHandler
 To ensure Minimal API endpoints are clear and readable, **SmallApiToolkit** offers the **IHttpRequestHandler** interface. By implementing this interface in your handler, you can utilize the **SendAsync** extension method directly within the Minimal API endpoint. This method simplifies the process by automatically generating a JSON response based on the **IHttpRequestHandler** implementation. Additionally, every response is wrapped in a **DataResponse**, ensuring a consistent structure containing **Data** and **Errors**.
@@ -192,7 +192,41 @@ This creates the endpoint route: **someGroup/v1/myGet**. For more complex versio
 
 ## Cors
 
+You can easily add basic CORS configuration using SmallApiToolkit. Simply add the CORS property to your appsettings.json file like this:
+```json
+"CORS": {
+"name": "allowLocalhostOrigins",
+"urls": [
+    "http://127.0.0.1:4200",
+    "http://localhost:4200",
+    "https://127.0.0.1:4200",
+    "https://localhost:4200"
+  ]
+}
+```
 
+Then, register the CORS configuration in the Program.cs file:
+
+```csharp
+var corsPolicyName = builder.Services.AddCorsByConfiguration(builder.Configuration);
+...
+app.UseCors(corsPolicyName); 
+```
+
+This code registers the following CORS policy:
+```csharp
+options.AddPolicy(name: name, policy =>
+{
+    policy.WithOrigins(urls)
+    .AllowAnyHeader()
+    .AllowAnyMethod();
+});
+```
+
+If you do not specify any URLs, this configuration will allow any origin.
 
 ## Used in Examples
-For a practical example of SmallApiToolkit in action, check out the [WeatherApi-VSA](https://github.com/Gramli/WeatherApi-VSA)repository.
+For a practical example of SmallApiToolkit in action, check out the repositories:
+* [WeatherApi-VSA](https://github.com/Gramli/WeatherApi-VSA) 
+* [AuthApi](https://github.com/Gramli/AuthApi) 
+* [FileApi](https://github.com/Gramli/FileApi)
