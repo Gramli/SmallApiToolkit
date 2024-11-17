@@ -1,5 +1,8 @@
 # SmallApiToolkit
-**SmallApiToolkit** is a tool designed to help developers build small APIs more quickly and with greater ease. It provides a range of features that streamline the creation of clean, maintainable, and well-structured API endpoints.
+**SmallApiToolkit** is a tool designed to help developers build small or example APIs more quickly. It provides a range of features that streamline the creation of clean, maintainable, and well-structured API endpoints.
+
+## Motivation
+Many of my example or educational projects use similar abstractions, extensions, or middlewares for tasks like exception handling and logging. The main purpose of this library is to reduce boilerplate code in my projects. However, the abstraction idea behind **IHttpRequestHandler** and the **SendAsync** extension method is production-ready, as I am already using it. Feel free to adopt these ideas in your projects!
 
 ## RequestHandler
 To ensure Minimal API endpoints are clear and readable, **SmallApiToolkit** offers the **IHttpRequestHandler** interface. By implementing this interface in your handler, you can utilize the **SendAsync** extension method directly within the Minimal API endpoint. This method simplifies the process by automatically generating a JSON response based on the **IHttpRequestHandler** implementation. Additionally, every response is wrapped in a **DataResponse**, ensuring a consistent structure containing **Data** and **Errors**.
@@ -60,62 +63,62 @@ To ensure that every client-side request is validated, the **ValidationHttpReque
 1. Inherit from ValidationHttpRequestHandler, pass IRequestValidator to the base constructor, and then override the HandleValidRequestAsync method. If you need to create a custom invalid response message, you can also override the CreateInvalidResponse method.
 
 ```csharp
-    internal sealed class GetCurrentWeatherHandler : ValidationHttpRequestHandler<CurrentWeatherDto, GetCurrentWeatherQuery>
+    //Handler
+    internal class WeatherForecastValidationRequestHandler : ValidationHttpRequestHandler<WeatherForecastDto[], WeatherForecastRequestDto>
     {
-        private readonly IRequestValidator<CurrentWeatherDto> _currentWeatherValidator;
-        private readonly IWeatherService _weatherService;
-        private readonly ILogger<GetCurrentWeatherHandler> _logger;
-        public GetCurrentWeatherHandler(IRequestValidator<GetCurrentWeatherQuery> getCurrentWeatherQueryValidator,
-            IRequestValidator<CurrentWeatherDto> currentWeatherValidator,
-            IWeatherService weatherService,
-            ILogger<GetCurrentWeatherHandler> logger)
-            : base(getCurrentWeatherQueryValidator)
+        public WeatherForecastValidationRequestHandler(IRequestValidator<WeatherForecastRequestDto> validator) 
+            : base(validator)
         {
-            _weatherService = Guard.Against.Null(weatherService);
-            _currentWeatherValidator = Guard.Against.Null(currentWeatherValidator);
-            _logger = Guard.Against.Null(logger);
         }
 
-        protected override HttpDataResponse<CurrentWeatherDto> CreateInvalidResponse(GetCurrentWeatherQuery request, RequestValidationResult validationResult)
+        protected override Task<HttpDataResponse<WeatherForecastDto[]>> HandleValidRequestAsync(WeatherForecastRequestDto request, CancellationToken cancellationToken)
         {
-            _logger.LogError(LogEvents.CurrentWeathersValidation, validationResult.ToString());
-            return HttpDataResponses.AsBadRequest<CurrentWeatherDto>(string.Format(ErrorMessages.RequestValidationError, request));
-        }
+            var summaries = new[]
+{
+                "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+            };
 
-        protected override async Task<HttpDataResponse<CurrentWeatherDto>> HandleValidRequestAsync(GetCurrentWeatherQuery request, CancellationToken cancellationToken)
-        {
-            var getCurrentWeatherResult = await _weatherService.GetCurrentWeather(request.Location, cancellationToken);
-            if (getCurrentWeatherResult.IsFailed)
-            {
-                _logger.LogError(LogEvents.CurrentWeathersGet, getCurrentWeatherResult.Errors.JoinToMessage());
-                return HttpDataResponses.AsInternalServerError<CurrentWeatherDto>(ErrorMessages.ExternalApiError);
-            }
-
-            var validationResult = _currentWeatherValidator.Validate(getCurrentWeatherResult.Value);
-            if (!validationResult.IsValid)
-            {
-                _logger.LogError(LogEvents.CurrentWeathersValidation, ErrorLogMessages.ValidationErrorLog, validationResult.ToString());
-                return HttpDataResponses.AsInternalServerError<CurrentWeatherDto>(ErrorMessages.ExternalApiError);
-            }
-
-            return HttpDataResponses.AsOK(getCurrentWeatherResult.Value);
+            var forecast = Enumerable.Range(1, 5).Select(index =>
+            new WeatherForecastDto
+            (
+                DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                Random.Shared.Next(-20, 55),
+                summaries[Random.Shared.Next(summaries.Length)]
+            ))
+            .ToArray();
+            return Task.FromResult(HttpDataResponses.AsOK(forecast));
         }
     }
 ```
 
-2. Register Handler in DI container:
-
+2. Create Validator
 ```csharp
-serviceCollection.AddScoped<IHttpRequestHandler<CurrentWeatherDto, GetCurrentWeatherQuery>, GetCurrentWeatherHandler>()
+    public class WeatherForecastValidationRequestValidator : IRequestValidator<WeatherForecastRequestDto>
+    {
+        public RequestValidationResult Validate(WeatherForecastRequestDto request)
+        {
+            if (request.TemperatureC > 999)
+            {
+                return new RequestValidationResult { IsValid = false };
+            }
+            return new RequestValidationResult { IsValid = true };
+        }
+    }
 ```
-3. Register Minimal Api endpoint:
+
+3. Register Handler and Validator in DI container:
 
 ```csharp
-MapGet("current", async (double latitude, double longitude, [FromServices] IHttpRequestHandler<CurrentWeatherDto, GetCurrentWeatherQuery> handler, CancellationToken cancellationToken) =>
-                    await handler.SendAsync(new GetCurrentWeatherQuery(latitude, longitude), cancellationToken))
-                        .ProducesDataResponse<CurrentWeatherDto>()
-                        .WithName("GetCurrentWeather")
-                        .WithTags("Getters");
+    .AddScoped<IHttpRequestHandler<WeatherForecastDto[], WeatherForecastRequestDto>, WeatherForecastValidationRequestHandler>()
+    .AddScoped<IRequestValidator<WeatherForecastRequestDto>, WeatherForecastValidationRequestValidator>();
+```
+4. Register Minimal Api endpoint:
+
+```csharp
+    .MapGet("/weatherforecastValidate",
+        async ([FromQuery(Name = "temp")]int temperatureC, [FromQuery(Name = "sum")]string summary, IHttpRequestHandler<WeatherForecastDto[], WeatherForecastRequestDto> httpRequestHandler, CancellationToken cancellationToken) =>
+            await httpRequestHandler.SendAsync(new WeatherForecastRequestDto(temperatureC, summary), cancellationToken))
+            .ProducesDataResponse<WeatherForecastDto[]>();
 ```
 
 ## Midlewares
