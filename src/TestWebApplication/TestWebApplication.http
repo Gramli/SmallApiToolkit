@@ -1,8 +1,13 @@
 @TestWebApplication_HostAddress = http://localhost:5223
 
+### Get Data
 GET {{TestWebApplication_HostAddress}}/weather/v1/weatherforecast/
 Accept: application/json
 
-###
+### Validation
 GET {{TestWebApplication_HostAddress}}/weather/v1/weatherforecastValidate?temp=1&sum=ss/
+Accept: application/json
+
+### Exception
+GET {{TestWebApplication_HostAddress}}/weather/v1/weatherforecastException
 Accept: application/json

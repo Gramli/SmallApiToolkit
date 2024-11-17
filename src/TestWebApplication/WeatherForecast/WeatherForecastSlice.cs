@@ -12,6 +12,11 @@ namespace TestWebApplication.WeatherForecast
     {
         public static IEndpointRouteBuilder AddForecastEndpoints(this IEndpointRouteBuilder endpointRouteBuilder)
         {
+            endpointRouteBuilder.MapGet("/weatherforecastException",
+                async (IHttpRequestHandler<bool, EmptyRequest> httpRequestHandler, CancellationToken cancellationToken) =>
+                    await httpRequestHandler.SendAsync(EmptyRequest.Instance, cancellationToken))
+                    .ProducesDataResponse<WeatherForecastDto[]>();
+
             endpointRouteBuilder.MapGet("/weatherforecast",
                 async (IHttpRequestHandler<WeatherForecastDto[], EmptyRequest> httpRequestHandler, CancellationToken cancellationToken) =>
                     await httpRequestHandler.SendAsync(EmptyRequest.Instance, cancellationToken))
@@ -32,7 +37,8 @@ namespace TestWebApplication.WeatherForecast
             => serviceDescriptors
                 .AddScoped<IHttpRequestHandler<WeatherForecastDto[], EmptyRequest>, WeatherForecastRequestHandler>()
                 .AddScoped<IHttpRequestHandler<WeatherForecastDto[], WeatherForecastRequestDto>, WeatherForecastValidationRequestHandler>()
-                .AddScoped<IRequestValidator<WeatherForecastRequestDto>, WeatherForecastValidationRequestValidator>();
+                .AddScoped<IRequestValidator<WeatherForecastRequestDto>, WeatherForecastValidationRequestValidator>()
+                .AddScoped<IHttpRequestHandler<bool, EmptyRequest>, WeatherForecastExceptionRequestHandler>();
     }
 
     internal class WeatherForecastRequestHandler : IHttpRequestHandler<WeatherForecastDto[], EmptyRequest>
@@ -53,6 +59,14 @@ namespace TestWebApplication.WeatherForecast
             ))
             .ToArray();
             return Task.FromResult(HttpDataResponses.AsOK(forecast));
+        }
+    }
+
+    internal class WeatherForecastExceptionRequestHandler : IHttpRequestHandler<bool, EmptyRequest>
+    {
+        public Task<HttpDataResponse<bool>> HandleAsync(EmptyRequest request, CancellationToken cancellationToken)
+        {
+            throw new Exception("Test exception");
         }
     }
 
