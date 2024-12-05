@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using SmallApiToolkit.Extensions;
 using SmallApiToolkit.Middleware;
 using TestWebApplication.WeatherForecast;
@@ -5,6 +6,7 @@ using TestWebApplication.WeatherForecast;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
 
 builder.Services.ConfigureWeatherForecast();
 

@@ -12,9 +12,24 @@ namespace SmallApiToolkit.Core.Extensions
             var response = await requestHandler.HandleAsync(request, cancellationToken);
             return Results.Json((DataResponse<TResponse>)response, statusCode: (int)response.StatusCode);
         }
+
+        public static async Task<IResult> SendAsync<TResponse>(this IHttpRequestHandler<TResponse> requestHandler, CancellationToken cancellationToken)
+        {
+            var response = await requestHandler.HandleAsync(cancellationToken);
+            return Results.Json((DataResponse<TResponse>)response, statusCode: (int)response.StatusCode);
+        }
         public static async Task<IResult> GetFileAsync<TResponse, TRequest>(this IHttpRequestHandler<TResponse, TRequest> requestHandler, TRequest request, CancellationToken cancellationToken) where TResponse : IFile
         {
             var response = await requestHandler.HandleAsync(request, cancellationToken);
+            if (response.Data is not null)
+            {
+                return Results.File(response.Data.Data, response.Data.ContentType, response.Data.FileName);
+            }
+            return Results.NotFound();
+        }
+        public static async Task<IResult> GetFileAsync<TResponse>(this IHttpRequestHandler<TResponse> requestHandler, CancellationToken cancellationToken) where TResponse : IFile
+        {
+            var response = await requestHandler.HandleAsync(cancellationToken);
             if (response.Data is not null)
             {
                 return Results.File(response.Data.Data, response.Data.ContentType, response.Data.FileName);

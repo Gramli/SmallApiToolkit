@@ -36,12 +36,12 @@ namespace SmallApiToolkit.Core.Extensions
                 StatusCode = HttpStatusCode.OK,
             };
 
-        public static HttpDataResponse<T> AsOK<T>(T data, IEnumerable<string> errorMessages)
+        public static HttpDataResponse<T> AsOK<T>(T data, IDictionary<string, object?> extensions)
             => new()
             {
                 Data = data,
                 StatusCode = HttpStatusCode.OK,
-                Errors = errorMessages
+                Extensions = extensions
             };
 
         public static HttpDataResponse<T> AsNoContent<T>()
@@ -75,14 +75,23 @@ namespace SmallApiToolkit.Core.Extensions
             => new()
             {
                 StatusCode = httpStatusCode,
-                Errors = errorMessages
+                Error = new ErrorDetails
+                {
+                    Title = "Error",
+                    Detail = "One or more errors occured.",
+                    Extensions = new Dictionary<string, object?> { { "error", errorMessages } }
+                }
             };
 
         private static HttpDataResponse<T> AsResponse<T>(HttpStatusCode httpStatusCode, string errorMessage)
             => new()
             {
                 StatusCode = httpStatusCode,
-                Errors = [errorMessage]
+                Error = new ErrorDetails
+                {
+                    Title = "Error",
+                    Detail = errorMessage,
+                }
             };
 
     }

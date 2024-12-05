@@ -25,7 +25,7 @@ namespace SmallApiToolkit.Middleware
         }
 
         /// <summary>
-        /// Write data to context response
+        /// Write data to HttpContext Response
         /// </summary>
         protected virtual async Task WriteResponseAsync(Exception generalEx, HttpContext context)
         {
@@ -43,7 +43,11 @@ namespace SmallApiToolkit.Middleware
         {
             var response = new DataResponse<object>()
             {
-                Errors = [errorMessage]
+                Error = new ErrorDetails
+                {
+                    Title = "Unexpected exception",
+                    Detail = errorMessage
+                }
             };
             return JsonSerializer.Serialize(response);
         }

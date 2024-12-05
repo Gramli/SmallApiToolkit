@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using SmallApiToolkit.Core.Extensions;
 using SmallApiToolkit.Core.RequestHandlers;
 using SmallApiToolkit.Core.Response;
@@ -7,19 +8,18 @@ using SmallApiToolkit.Extensions;
 
 namespace TestWebApplication.WeatherForecast
 {
-
     public static class WeatherForecastEndpointBuilder
-    {
+    {        
         public static IEndpointRouteBuilder AddForecastEndpoints(this IEndpointRouteBuilder endpointRouteBuilder)
         {
             endpointRouteBuilder.MapGet("/weatherforecastException",
-                async (IHttpRequestHandler<bool, EmptyRequest> httpRequestHandler, CancellationToken cancellationToken) =>
-                    await httpRequestHandler.SendAsync(EmptyRequest.Instance, cancellationToken))
+                async (IHttpRequestHandler<bool> httpRequestHandler, CancellationToken cancellationToken) =>
+                    await httpRequestHandler.SendAsync(cancellationToken))
                     .ProducesDataResponse<WeatherForecastDto[]>();
 
             endpointRouteBuilder.MapGet("/weatherforecast",
-                async (IHttpRequestHandler<WeatherForecastDto[], EmptyRequest> httpRequestHandler, CancellationToken cancellationToken) =>
-                    await httpRequestHandler.SendAsync(EmptyRequest.Instance, cancellationToken))
+                async (IHttpRequestHandler<WeatherForecastDto[]> httpRequestHandler, CancellationToken cancellationToken) =>
+                    await httpRequestHandler.SendAsync(cancellationToken))
                     .ProducesDataResponse<WeatherForecastDto[]>();
 
             endpointRouteBuilder.MapGet("/weatherforecastValidate",
@@ -31,19 +31,20 @@ namespace TestWebApplication.WeatherForecast
         }
     }
 
+
     public static class WeatherForecastConfiguration
     {
         public static IServiceCollection ConfigureWeatherForecast(this IServiceCollection serviceDescriptors)
             => serviceDescriptors
-                .AddScoped<IHttpRequestHandler<WeatherForecastDto[], EmptyRequest>, WeatherForecastRequestHandler>()
+                .AddScoped<IHttpRequestHandler<WeatherForecastDto[]>, WeatherForecastRequestHandler>()
                 .AddScoped<IHttpRequestHandler<WeatherForecastDto[], WeatherForecastRequestDto>, WeatherForecastValidationRequestHandler>()
                 .AddScoped<IRequestValidator<WeatherForecastRequestDto>, WeatherForecastValidationRequestValidator>()
-                .AddScoped<IHttpRequestHandler<bool, EmptyRequest>, WeatherForecastExceptionRequestHandler>();
+                .AddScoped<IHttpRequestHandler<bool>, WeatherForecastExceptionRequestHandler>();
     }
 
-    internal class WeatherForecastRequestHandler : IHttpRequestHandler<WeatherForecastDto[], EmptyRequest>
+    internal class WeatherForecastRequestHandler : IHttpRequestHandler<WeatherForecastDto[]>
     {
-        public Task<HttpDataResponse<WeatherForecastDto[]>> HandleAsync(EmptyRequest request, CancellationToken cancellationToken)
+        public Task<HttpDataResponse<WeatherForecastDto[]>> HandleAsync(CancellationToken cancellationToken)
         {
             var summaries = new[]
             {
@@ -62,9 +63,9 @@ namespace TestWebApplication.WeatherForecast
         }
     }
 
-    internal class WeatherForecastExceptionRequestHandler : IHttpRequestHandler<bool, EmptyRequest>
+    internal class WeatherForecastExceptionRequestHandler : IHttpRequestHandler<bool>
     {
-        public Task<HttpDataResponse<bool>> HandleAsync(EmptyRequest request, CancellationToken cancellationToken)
+        public Task<HttpDataResponse<bool>> HandleAsync(CancellationToken cancellationToken)
         {
             throw new Exception("Test exception");
         }
