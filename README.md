@@ -1,13 +1,13 @@
 # SmallApiToolkit
 
 [![NuGet version](https://img.shields.io/nuget/v/SmallApiToolkit?style=flat-square)](https://www.nuget.org/packages/SmallApiToolkit)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/Gramli/SmallApiToolkit/dotnet.yml?style=flat-square)](https://github.com/Gramli/SmallApiToolkit/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Gramli/SmallApiToolkit/build.yml?style=flat-square)](https://github.com/Gramli/SmallApiToolkit/actions)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512bd4?style=flat-square)](https://dotnet.microsoft.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE.md)
 
 A C# library designed for building small-scale or example web APIs quickly and efficiently. Streamline your development process with ready-to-use extensions, middleware, and support classes for ASP.NET Core Minimal APIs.
 
-[Features](#features) • [Getting Started](#getting-started) • [Documentation](#documentation) • [Examples](#examples)
+[Features](#features) ï¿½ [Getting Started](#getting-started) ï¿½ [Documentation](#documentation) ï¿½ [Examples](#examples)
 
 ## Why SmallApiToolkit?
 
