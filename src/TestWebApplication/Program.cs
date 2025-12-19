@@ -5,6 +5,7 @@ using TestWebApplication.WeatherForecast;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddOutputCacheWithCustomPolicy((WeatherForecastPolicies.OutputCacheFiveMinutes, TimeSpan.FromSeconds(300)));
 
 builder.Services.ConfigureWeatherForecast();
 
@@ -16,6 +17,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseOutputCache();
 
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseMiddleware<LoggingMiddleware>();
