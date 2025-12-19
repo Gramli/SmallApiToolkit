@@ -7,7 +7,7 @@
 
 A C# library designed for building small-scale or example web APIs quickly and efficiently. Streamline your development process with ready-to-use extensions, middleware, and support classes for ASP.NET Core Minimal APIs.
 
-[Features](#features) � [Getting Started](#getting-started) � [Documentation](#documentation) � [Examples](#examples)
+[Features](#features) • [Getting Started](#getting-started) • [Documentation](#documentation) • [Examples](#examples)
 
 ## Why SmallApiToolkit?
 
@@ -162,11 +162,11 @@ app.MapGet("/weather",
 
 #### Output Caching (Server-Side)
 
-Uses ASP.NET Core's output caching with intelligent policies:
+Uses ASP.NET Core's output caching with intelligent custom policies.
 
-**Setup**:
+**Basic Setup**:
 
-1. Register policies:
+1. Register custom policies:
 
 ```csharp
 builder.Services.AddOutputCacheWithCustomPolicy(
@@ -188,6 +188,44 @@ app.MapGet("/weather",
     async (IHttpRequestHandler<WeatherForecastDto[], EmptyRequest> handler, CancellationToken ct) =>
         await handler.SendAsync(EmptyRequest.Instance, ct))
     .CacheOutput("weather");
+```
+
+**Advanced Setup with Additional Policies**:
+
+You can combine custom policies with ASP.NET Core's built-in policies:
+
+```csharp
+builder.Services.AddOutputCacheWithCustomPolicy(
+    configureOptions: options =>
+    {
+        // Add built-in base policy
+        options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
+        
+        // Add custom named policy with specific rules
+        options.AddPolicy("myPolicy", builder => 
+            builder
+                .Expire(TimeSpan.FromMinutes(1))
+                .SetVaryByQuery("id", "type"));
+    },
+    // Your custom policies
+    ("weather", TimeSpan.FromMinutes(5)),
+    ("short", TimeSpan.FromSeconds(30))
+);
+```
+
+Or use only custom policies without additional configuration:
+
+```csharp
+// Just custom policies
+builder.Services.AddOutputCacheWithCustomPolicy(
+    ("weather", TimeSpan.FromMinutes(5))
+);
+
+// With additional ASP.NET Core policies
+builder.Services.AddOutputCacheWithCustomPolicy(
+    options => options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10))),
+    ("weather", TimeSpan.FromMinutes(5))
+);
 ```
 
 **Custom Policy Rules**:

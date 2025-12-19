@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Build & Unit Test
+    name: Build
     defaults:
       run:
         working-directory: src

@@ -5,7 +5,12 @@ using TestWebApplication.WeatherForecast;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddOutputCacheWithCustomPolicy((WeatherForecastPolicies.OutputCacheFiveMinutes, TimeSpan.FromSeconds(300)));
+builder.Services.AddOutputCacheWithCustomPolicy(
+    (options) =>
+    {
+        options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromMinutes(1)));
+    },
+    (WeatherForecastPolicies.OutputCacheFiveMinutes, TimeSpan.FromSeconds(300)));
 
 builder.Services.ConfigureWeatherForecast();
 
