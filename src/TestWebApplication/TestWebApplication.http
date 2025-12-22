@@ -11,3 +11,7 @@ Accept: application/json
 ### Exception
 GET {{TestWebApplication_HostAddress}}/weather/v1/weatherforecastException
 Accept: application/json
+
+### OutputCache
+GET {{TestWebApplication_HostAddress}}/weather/v1/weather
+Accept: application/json

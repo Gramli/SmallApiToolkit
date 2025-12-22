@@ -7,7 +7,10 @@ using SmallApiToolkit.Extensions;
 
 namespace TestWebApplication.WeatherForecast
 {
-
+    public static class WeatherForecastPolicies
+    {
+        public const string OutputCacheFiveMinutes = "outputCache5";
+    }
     public static class WeatherForecastEndpointBuilder
     {
         public static IEndpointRouteBuilder AddForecastEndpoints(this IEndpointRouteBuilder endpointRouteBuilder)
@@ -20,12 +23,28 @@ namespace TestWebApplication.WeatherForecast
             endpointRouteBuilder.MapGet("/weatherforecast",
                 async (IHttpRequestHandler<WeatherForecastDto[], EmptyRequest> httpRequestHandler, CancellationToken cancellationToken) =>
                     await httpRequestHandler.SendAsync(EmptyRequest.Instance, cancellationToken))
-                    .ProducesDataResponse<WeatherForecastDto[]>();
+                    .ProducesDataResponse<WeatherForecastDto[]>()
+                    .CustomCacheOutput(WeatherForecastPolicies.OutputCacheFiveMinutes);
 
             endpointRouteBuilder.MapGet("/weatherforecastValidate",
                 async ([FromQuery(Name = "temp")]int temperatureC, [FromQuery(Name = "sum")]string summary, IHttpRequestHandler<WeatherForecastDto[], WeatherForecastRequestDto> httpRequestHandler, CancellationToken cancellationToken) =>
                     await httpRequestHandler.SendAsync(new WeatherForecastRequestDto(temperatureC, summary), cancellationToken))
-                    .ProducesDataResponse<WeatherForecastDto[]>();
+                    .ProducesDataResponse<WeatherForecastDto[]>()
+                    .AddResponseCacheHeader(300);
+
+            endpointRouteBuilder.MapGet("/weather",
+                async () =>
+                {
+                    var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
+                    var forecast = Enumerable.Range(1, 7).Select(index =>
+                        new WeatherForecastDto(
+                            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                            Random.Shared.Next(-20, 55),
+                            summaries[Random.Shared.Next(summaries.Length)]
+                        )).ToArray();
+                    return Results.Ok(forecast);
+                })
+                .ProducesDataResponse<WeatherForecastDto[]>();
 
             return endpointRouteBuilder;
         }

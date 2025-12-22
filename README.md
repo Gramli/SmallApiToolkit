@@ -1,235 +1,334 @@
 # SmallApiToolkit
-**SmallApiToolkit** is a tool designed to help developers build small or example APIs more quickly. It provides a range of features that streamline the creation of clean, maintainable, and well-structured API endpoints.
 
-## Motivation
-Many of my example or educational projects use similar abstractions, extensions, or middlewares for tasks like exception handling and logging. The main purpose of this library is to reduce boilerplate code in my projects. However, the abstraction idea behind **IHttpRequestHandler** and the **SendAsync** extension method is production-ready, as I am already using it. Feel free to adopt these ideas in your projects!
+[![NuGet version](https://img.shields.io/nuget/v/SmallApiToolkit?style=flat-square)](https://www.nuget.org/packages/SmallApiToolkit)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Gramli/SmallApiToolkit/build.yml?style=flat-square)](https://github.com/Gramli/SmallApiToolkit/actions)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512bd4?style=flat-square)](https://dotnet.microsoft.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE.md)
 
-## RequestHandler
-To ensure Minimal API endpoints are clear and readable, **SmallApiToolkit** offers the **IHttpRequestHandler** interface. By implementing this interface in your handler, you can utilize the **SendAsync** extension method directly within the Minimal API endpoint. This method simplifies the process by automatically generating a JSON response based on the **IHttpRequestHandler** implementation. Additionally, every response is wrapped in a **DataResponse**, ensuring a consistent structure containing **Data** and **Errors**.
+A C# library designed for building small-scale or example web APIs quickly and efficiently. Streamline your development process with ready-to-use extensions, middleware, and support classes for ASP.NET Core Minimal APIs.
 
+[Features](#features) • [Getting Started](#getting-started) • [Documentation](#documentation) • [Examples](#examples)
+
+## Why SmallApiToolkit?
+
+Many small or educational projects require similar abstractions, extensions, and middleware for tasks like exception handling, logging, and request validation. **SmallApiToolkit** eliminates this boilerplate code, allowing you to focus on building your API's core functionality.
+
+The `IHttpRequestHandler` abstraction and the `SendAsync` extension method are production-ready patterns that provide:
+- **Clean, maintainable endpoints** with clear separation of concerns
+- **Consistent response structure** with built-in error handling
+- **Reduced boilerplate** through reusable components
+- **Validation-first approach** to ensure data integrity
+
+## Features
+
+- **Request Handler Pattern**: Clean abstraction for endpoint logic with built-in validation support
+- **Caching Support**: Both HTTP response caching headers and ASP.NET Core output caching with custom policies
+- **Middleware Ready**: Pre-built logging and exception handling middleware
+- **API Versioning**: Simple route-based versioning for Minimal APIs
+- **CORS Configuration**: Quick setup via configuration files
+- **Consistent Responses**: Standardized `DataResponse<T>` wrapper for all API responses
+
+## Getting Started
+
+### Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) or later
+
+### Installation
+
+Install the NuGet package:
+
+```bash
+dotnet add package SmallApiToolkit
 ```
+
+Or via Package Manager Console:
+
+```powershell
+Install-Package SmallApiToolkit
+```
+
+### Quick Start
+
+1. **Create a request handler**:
+
+```csharp
+public class GetWeatherHandler : IHttpRequestHandler<WeatherForecastDto[], EmptyRequest>
+{
+    public Task<HttpDataResponse<WeatherForecastDto[]>> HandleAsync(
+        EmptyRequest request, 
+        CancellationToken cancellationToken)
+    {
+        var forecast = GenerateWeatherForecast();
+        return Task.FromResult(HttpDataResponses.AsOK(forecast));
+    }
+}
+```
+
+2. **Register in DI container**:
+
+```csharp
+builder.Services.AddScoped<IHttpRequestHandler<WeatherForecastDto[], EmptyRequest>, GetWeatherHandler>();
+```
+
+3. **Create Minimal API endpoint**:
+
+```csharp
+app.MapGet("/weather", 
+    async (IHttpRequestHandler<WeatherForecastDto[], EmptyRequest> handler, CancellationToken ct) =>
+        await handler.SendAsync(EmptyRequest.Instance, ct))
+    .ProducesDataResponse<WeatherForecastDto[]>();
+```
+
+That's it! Your endpoint now returns a consistent `DataResponse<T>` structure with built-in error handling.
+
+## Documentation
+
+### Request Handlers
+
+The `IHttpRequestHandler<TResponse, TRequest>` interface provides a clean abstraction for endpoint logic. All responses are wrapped in a `DataResponse<T>` structure:
+
+```csharp
 public class DataResponse<T>
 {
     public T? Data { get; init; }
-
     public IEnumerable<string> Errors { get; init; } = Array.Empty<string>();
-
 }
 ```
 
-Example **IHttpRequestHandler** usage:
-1. Implement the IHttpRequestHandler interface
+#### Validation Handler
+
+For endpoints requiring validation, use `ValidationHttpRequestHandler<TResponse, TRequest>`:
 
 ```csharp
-    internal sealed class AddFavoriteHandler : IHttpRequestHandler<int, AddFavoriteCommand>
-    {
-        private readonly IValidator<AddFavoriteCommand> _addFavoriteCommandValidator;
-        public AddFavoriteHandler()
-        {
-            _addFavoriteCommandValidator = Guard.Against.Null(addFavoriteCommandValidator);
-        }
-
-        public async Task<HttpDataResponse<int>> HandleAsync(AddFavoriteCommand request, CancellationToken cancellationToken)
-        {
-            if (!_addFavoriteCommandValidator.IsValid(request))
-            {
-                return HttpDataResponses.AsBadRequest<int>(string.Format(ErrorMessages.RequestValidationError, request));
-            }
-
-
-            return HttpDataResponses.AsOK(addResult.Value);
-        }
-```
-
-2. Register Handler in DI container:
-
-```csharp
-serviceCollection.AddScoped<IHttpRequestHandler<int, AddFavoriteCommand>, AddFavoriteHandler>()
-```
-3. Register Minimal Api endpoint:
-
-```csharp
-MapPost("favorite", async ([FromBody] AddFavoriteCommand addFavoriteCommand, [FromServices] IHttpRequestHandler<int, AddFavoriteCommand> handler, CancellationToken cancellationToken) =>
-                    await handler.SendAsync(addFavoriteCommand, cancellationToken))
-                        .ProducesDataResponse<int>()
-                        .WithName("AddFavorite")
-                        .WithTags("Setters");
-```
-
-### ValidationHttpRequestHandler
-
-To ensure that every client-side request is validated, the **ValidationHttpRequestHandler<TResponse, TRequest>** class is provided. This class eliminates the need to duplicate validation logic across handlers by leveraging the **IRequestValidator<TRequest>** interface.
-
-1. Inherit from ValidationHttpRequestHandler, pass IRequestValidator to the base constructor, and then override the HandleValidRequestAsync method. If you need to create a custom invalid response message, you can also override the CreateInvalidResponse method.
-
-```csharp
-    //Handler
-    internal class WeatherForecastValidationRequestHandler : ValidationHttpRequestHandler<WeatherForecastDto[], WeatherForecastRequestDto>
-    {
-        public WeatherForecastValidationRequestHandler(IRequestValidator<WeatherForecastRequestDto> validator) 
-            : base(validator)
-        {
-        }
-
-        protected override Task<HttpDataResponse<WeatherForecastDto[]>> HandleValidRequestAsync(WeatherForecastRequestDto request, CancellationToken cancellationToken)
-        {
-            var summaries = new[]
+public class CreateUserHandler : ValidationHttpRequestHandler<UserDto, CreateUserRequest>
 {
-                "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-            };
+    public CreateUserHandler(IRequestValidator<CreateUserRequest> validator) 
+        : base(validator) { }
 
-            var forecast = Enumerable.Range(1, 5).Select(index =>
-            new WeatherForecastDto
-            (
-                DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                Random.Shared.Next(-20, 55),
-                summaries[Random.Shared.Next(summaries.Length)]
-            ))
-            .ToArray();
-            return Task.FromResult(HttpDataResponses.AsOK(forecast));
-        }
-    }
-```
-
-2. Create Validator
-```csharp
-    public class WeatherForecastValidationRequestValidator : IRequestValidator<WeatherForecastRequestDto>
+    protected override Task<HttpDataResponse<UserDto>> HandleValidRequestAsync(
+        CreateUserRequest request, 
+        CancellationToken cancellationToken)
     {
-        public RequestValidationResult Validate(WeatherForecastRequestDto request)
-        {
-            if (request.TemperatureC > 999)
-            {
-                return new RequestValidationResult { IsValid = false };
-            }
-            return new RequestValidationResult { IsValid = true };
-        }
+        // Your logic here - validation is already done
+        var user = CreateUser(request);
+        return Task.FromResult(HttpDataResponses.AsOK(user));
     }
+}
 ```
 
-3. Register Handler and Validator in DI container:
+Implement the validator:
 
 ```csharp
-    .AddScoped<IHttpRequestHandler<WeatherForecastDto[], WeatherForecastRequestDto>, WeatherForecastValidationRequestHandler>()
-    .AddScoped<IRequestValidator<WeatherForecastRequestDto>, WeatherForecastValidationRequestValidator>();
-```
-4. Register Minimal Api endpoint:
-
-```csharp
-    .MapGet("/weatherforecastValidate",
-        async ([FromQuery(Name = "temp")]int temperatureC, [FromQuery(Name = "sum")]string summary, IHttpRequestHandler<WeatherForecastDto[], WeatherForecastRequestDto> httpRequestHandler, CancellationToken cancellationToken) =>
-            await httpRequestHandler.SendAsync(new WeatherForecastRequestDto(temperatureC, summary), cancellationToken))
-            .ProducesDataResponse<WeatherForecastDto[]>();
-```
-
-## Midlewares
-Middlewares are essential for handling cross-cutting concerns such as authentication, logging, and error handling. **SmallApiToolkit** provides built-in middlewares for logging and exception handling, simplifying their integration into your API.
-
-### Logging Middleware
-To log requests and responses, use the LoggingMiddleware. Register it as follows: 
-```
-var builder = WebApplication.CreateBuilder(args);
-builder.AddLogging(LogLevel.Debug); // register console logging
-...
-var app = builder.Build();
-...
-app.UseMiddleware<LoggingMiddleware>(); // register middleware
-...
-app.Run();
-```
-By default, requests and responses are logged at the Information log level. For more control over logging, you can inherit from **LoggingMiddleware** and override its methods.
-
-You can find more information about logging in the [Microsoft documentation](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-8.0)
-
-If you don't need the ability to edit your request and response logs, you can use the **built-in Microsoft middleware**:
-
-```
-var builder = WebApplication.CreateBuilder(args);
-//...
-builder.Services.AddHttpLogging(options => 
+public class CreateUserValidator : IRequestValidator<CreateUserRequest>
 {
-    options.LoggingFields = HttpLoggingFields.RequestHeaders |
-                            HttpLoggingFields.RequestBody |
-                            HttpLoggingFields.ResponseHeaders |
-                            HttpLoggingFields.ResponseBody;
-});
-...
+    public RequestValidationResult Validate(CreateUserRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Email))
+            return new RequestValidationResult { IsValid = false };
+            
+        return new RequestValidationResult { IsValid = true };
+    }
+}
+```
+
+Register both in DI:
+
+```csharp
+builder.Services
+    .AddScoped<IHttpRequestHandler<UserDto, CreateUserRequest>, CreateUserHandler>()
+    .AddScoped<IRequestValidator<CreateUserRequest>, CreateUserValidator>();
+```
+
+### Caching
+
+SmallApiToolkit provides two complementary caching approaches:
+
+#### HTTP Response Caching Headers
+
+Adds `Cache-Control` headers for client-side and proxy caching:
+
+```csharp
+app.MapGet("/weather", 
+    async (IHttpRequestHandler<WeatherForecastDto[], EmptyRequest> handler, CancellationToken ct) =>
+        await handler.SendAsync(EmptyRequest.Instance, ct))
+    .AddResponseCacheHeader(300); // Cache for 5 minutes
+```
+
+**Features**:
+- Only applies to GET/HEAD requests returning 200 OK
+- Automatically skips error responses
+- No server-side resource requirements
+
+#### Output Caching (Server-Side)
+
+Uses ASP.NET Core's output caching with intelligent custom policies.
+
+**Basic Setup**:
+
+1. Register custom policies:
+
+```csharp
+builder.Services.AddOutputCacheWithCustomPolicy(
+    ("weather", TimeSpan.FromMinutes(5)),
+    ("short", TimeSpan.FromSeconds(30))
+);
+```
+
+2. Enable middleware:
+
+```csharp
+app.UseOutputCache();
+```
+
+3. Apply to endpoints:
+
+```csharp
+app.MapGet("/weather", 
+    async (IHttpRequestHandler<WeatherForecastDto[], EmptyRequest> handler, CancellationToken ct) =>
+        await handler.SendAsync(EmptyRequest.Instance, ct))
+    .CacheOutput("weather");
+```
+
+**Advanced Setup with Additional Policies**:
+
+You can combine custom policies with ASP.NET Core's built-in policies:
+
+```csharp
+builder.Services.AddOutputCacheWithCustomPolicy(
+    configureOptions: options =>
+    {
+        // Add built-in base policy
+        options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
+        
+        // Add custom named policy with specific rules
+        options.AddPolicy("myPolicy", builder => 
+            builder
+                .Expire(TimeSpan.FromMinutes(1))
+                .SetVaryByQuery("id", "type"));
+    },
+    // Your custom policies
+    ("weather", TimeSpan.FromMinutes(5)),
+    ("short", TimeSpan.FromSeconds(30))
+);
+```
+
+Or use only custom policies without additional configuration:
+
+```csharp
+// Just custom policies
+builder.Services.AddOutputCacheWithCustomPolicy(
+    ("weather", TimeSpan.FromMinutes(5))
+);
+
+// With additional ASP.NET Core policies
+builder.Services.AddOutputCacheWithCustomPolicy(
+    options => options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10))),
+    ("weather", TimeSpan.FromMinutes(5))
+);
+```
+
+**Custom Policy Rules**:
+- Only caches GET/HEAD requests
+- Excludes responses with `Set-Cookie` headers
+- Only caches 200 OK and 301 responses
+- Varies by query string parameters
+
+**Comparison**:
+
+| Feature | AddResponseCacheHeader | Output Caching |
+|---------|------------------------|----------------|
+| **Location** | Client & proxies | Server memory |
+| **Setup** | Single line | Requires registration |
+| **Performance** | Reduces bandwidth | Prevents execution |
+| **Best For** | Public APIs | High-traffic endpoints |
+
+### Middleware
+
+#### Logging Middleware
+
+Logs all requests and responses:
+
+```csharp
+builder.Services.AddLogging(options => options.SetMinimumLevel(LogLevel.Information));
+
 var app = builder.Build();
-...
-app.UseHttpLogging();
-...
-app.Run();
+app.UseMiddleware<LoggingMiddleware>();
 ```
-For more information, see [HTTP logging in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/http-logging/?view=aspnetcore-8.0)
 
-### Exception Middleware
-To catch and handle unexpected errors, use the **ExceptionMiddleware**. Register it like this:
+Customize by inheriting from `LoggingMiddleware` and overriding its methods.
 
-```
-var builder = WebApplication.CreateBuilder(args);
-...
+> **Note**: For simpler scenarios, consider using [ASP.NET Core's built-in HTTP logging](https://learn.microsoft.com/aspnet/core/fundamentals/http-logging).
+
+#### Exception Middleware
+
+Catches unhandled exceptions and returns consistent error responses:
+
+```csharp
 var app = builder.Build();
-...
-app.UseMiddleware<ExceptionMiddleware>(); // register middleware
-...
-app.Run();
-```
-Override the **ExtractFromException** and **CreateResponseJson** methods to customize the error response sent to clients.
-
-## Versioning
-**SmallApiToolkit** includes a **MapVersionGroup** extension method for versioning endpoint routes, ensuring your API can evolve without breaking existing clients.
-
-```
-...
-var app = builder.Build();
-
-...
-
-app.MapGroup("someGroup")
-  .MapVersionGroup(1)
-  .MapGet("myGet", () => "This is a GET");
-
-app.Run();
+app.UseMiddleware<ExceptionMiddleware>();
 ```
 
-This creates the endpoint route: **someGroup/v1/myGet**. For more complex versioning needs, consider using: [https://github.com/dotnet/aspnet-api-versioning](https://github.com/dotnet/aspnet-api-versioning)
+Customize error responses by overriding `ExtractFromException` and `CreateResponseJson` methods.
 
-## Cors
+### API Versioning
 
-You can easily add basic CORS configuration using SmallApiToolkit. Simply add the CORS property to your appsettings.json file like this:
+Simple route-based versioning for Minimal APIs:
+
+```csharp
+app.MapGroup("api")
+    .MapVersionGroup(1)
+    .MapGet("users", GetUsers);
+
+// Creates route: api/v1/users
+```
+
+For more advanced versioning needs, see [asp-net-api-versioning](https://github.com/dotnet/aspnet-api-versioning).
+
+### CORS Configuration
+
+Configure CORS via `appsettings.json`:
+
 ```json
-"CORS": {
-"name": "allowLocalhostOrigins",
-"urls": [
-    "http://127.0.0.1:4200",
-    "http://localhost:4200",
-    "https://127.0.0.1:4200",
-    "https://localhost:4200"
-  ]
+{
+  "CORS": {
+    "name": "allowLocalhost",
+    "urls": [
+      "http://localhost:4200",
+      "https://localhost:4200"
+    ]
+  }
 }
 ```
 
-Then, register the CORS configuration in the Program.cs file:
+Register in `Program.cs`:
 
 ```csharp
 var corsPolicyName = builder.Services.AddCorsByConfiguration(builder.Configuration);
-...
-app.UseCors(corsPolicyName); 
+
+var app = builder.Build();
+app.UseCors(corsPolicyName);
 ```
 
-This code registers the following CORS policy:
-```csharp
-options.AddPolicy(name: name, policy =>
-{
-    policy.WithOrigins(urls)
-    .AllowAnyHeader()
-    .AllowAnyMethod();
-});
-```
+This creates a policy allowing the specified origins with any headers and methods. Omitting URLs allows any origin.
 
-If you do not specify any URLs, this configuration will allow any origin.
+## Examples
 
-## Used in Examples
-For a practical example of SmallApiToolkit in action, check out the repositories:
-* [WeatherApi-VSA](https://github.com/Gramli/WeatherApi-VSA) 
-* [AuthApi](https://github.com/Gramli/AuthApi) 
-* [FileApi](https://github.com/Gramli/FileApi)
+See SmallApiToolkit in action in these projects:
+
+- [WeatherApi-VSA](https://github.com/Gramli/WeatherApi-VSA) - Vertical Slice Architecture example
+- [AuthApi](https://github.com/Gramli/AuthApi) - Authentication and authorization
+- [FileApi](https://github.com/Gramli/FileApi) - File upload and management
+
+## Resources
+
+- [ASP.NET Core Minimal APIs](https://learn.microsoft.com/aspnet/core/fundamentals/minimal-apis)
+- [Output Caching in ASP.NET Core](https://learn.microsoft.com/aspnet/core/performance/caching/output)
+- [Response Caching](https://learn.microsoft.com/aspnet/core/performance/caching/response)
+- [HTTP Logging](https://learn.microsoft.com/aspnet/core/fundamentals/http-logging)
+
+## Motivation
+
+This library was created to reduce repetitive code across my example and educational projects. While designed for quick prototyping and small APIs, the core patterns (especially `IHttpRequestHandler`) are production-ready and actively used in real applications.
+
+Feel free to adopt these ideas in your own projects!

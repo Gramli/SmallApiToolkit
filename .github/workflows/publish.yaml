@@ -1,0 +1,45 @@
+name: Publish to NuGet
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: Build and Publish to NuGet
+    defaults:
+      run:
+        working-directory: src
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 10.0.x
+          
+      - name: Restore dependencies
+        run: dotnet restore
+        
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+        
+      - name: Pack SmallApiToolkit.Core
+        run: dotnet pack SmallApiToolkit.Core/SmallApiToolkit.Core.csproj --configuration Release --no-build --output ./nupkgs
+        
+      - name: Pack SmallApiToolkit
+        run: dotnet pack SmallApiToolkit/SmallApiToolkit.csproj --configuration Release --no-build --output ./nupkgs
+        
+      - name: Publish SmallApiToolkit.Core to NuGet
+        run: dotnet nuget push ./nupkgs/SmallApiToolkit.Core.*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        
+      - name: Publish SmallApiToolkit to NuGet
+        run: dotnet nuget push ./nupkgs/SmallApiToolkit.*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
